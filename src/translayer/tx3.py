@@ -9,11 +9,11 @@ import time
 
 class _tx_request:
 
-    def __init__(self):
+    def __init__(self,tx_token):
         self.headers = CaseInsensitiveDict()
         self.headers["Accept"] = "application/vnd.api+json"
         # self.headers["Content-Type"] = "application/vnd.api+json"
-        self.headers["Authorization"] = "Bearer " + os.getenv("TX_TOKEN")
+        self.headers["Authorization"] = "Bearer " + tx_token
         self.api_base="https://rest.api.transifex.com/"
 
     def post(self,url,payload):
@@ -286,10 +286,10 @@ class project:
 
 
 class tx:
-    def __init__(self,org):
+    def __init__(self,org,tx_token):
 
         self.org="o:"+org
-        self.txr=_tx_request()
+        self.txr=_tx_request(tx_token)
         self.projects=[]
 
 
