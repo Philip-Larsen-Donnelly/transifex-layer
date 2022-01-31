@@ -290,31 +290,31 @@ class tx:
 
         self.org="o:"+org
         self.txr=_tx_request(tx_token)
-        self.projects=[]
+        self._projects=[]
 
 
     def __projects(self):
-        if self.projects == []:
+        if self._projects == []:
             print("Fetching projects...")
             projects="projects?filter[organization]=" + self.org
             prjs = self.txr.get(projects)
             for p in prjs['data']:
-                self.projects.append(project(p,self.txr))
+                self._projects.append(project(p,self.txr))
             while prjs['links']['next']:
                 prjs = self.txr.get_url(prjs['links']['next'])
                 for p in prjs['data']:
-                    self.projects.append(resource(p,self.txr))
+                    self._projects.append(resource(p,self.txr))
             print("done.")
 
     def projects(self):
         self.__projects()
         ps = []
-        for p in self.projects:
+        for p in self._projects:
             ps.append(p.proj)
         return ps
 
     def project(self, proj):
         self.__projects()
-        for p in self.projects:
+        for p in self._projects:
             if p.slug == proj:
                 return p
