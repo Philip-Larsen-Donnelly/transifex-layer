@@ -96,9 +96,18 @@ class _tx_request:
             print(up.status_code,"Error uploading file")
 
 
+class language:
+    def __init__(self,lang):
+        self.details=lang
+        self.id=lang['id']
+        self.attributes=lang['attributes']
+        self.name=self.attributes['name']
+        self.code=self.attributes['code']
+
+
 class resource:
     def __init__(self,res,txr):
-        self.res=res
+        self.details=res
         self.id=res['id']
         self.attributes=res['attributes']
         self.name=self.attributes['name']
@@ -178,28 +187,18 @@ class resource:
             return self.stats
 
 
-
-
 class project:
     def __init__(self,proj,txr):
-        self.proj=proj
+        self.details=proj
         self.id=proj['id']
         self.attributes=proj['attributes']
         self.name=self.attributes['name']
         self.slug=self.attributes['slug']
         self.txr=txr
         self._resources=[]
-        self._details={}
+        self._languages=[]
+        # self._details={}
         self.stats={}
-
-    def __details(self):
-        if self._details == {}:
-            det="projects/" + self.id
-            self._details = self.txr.get(det)['data']
-
-    def details(self):
-        self.__details()
-        return self._details
 
     def __resources(self):
         if self._resources == []:
@@ -215,7 +214,6 @@ class project:
                     self._resources.append(resource(r,self.txr))
             print("done.")
 
-
     def resources(self):
         self.__resources()
         rs = []
@@ -229,9 +227,31 @@ class project:
             if r.slug == res:
                 return r
 
+    def __languages(self):
+        if self._languages == []:
+            print("Fetching languages for project '"+self.name+"'...")
+            languages="projects/" + self.id + "/languages"
+            langs = self.txr.get(languages)
+            for l in langs['data']:
+                self._languages.append(language(l))
+            # while langs['links']['next']:
+            #     langs = self.txr.get_url(lannguage['links']['next'])
+            #     for l in langs['data']:
+            #         self._languages.append(language(l))
+            print("done.")
+
+    def language(self, lang):
+        self.__languages()
+        for l in self._languages:
+            if l.code == lang:
+                return l
+
     def languages(self):
-        lang="projects/" + self.id + "/languages"
-        return self.txr.get(lang)
+        self.__languages()
+        ls = []
+        for l in self._languages:
+            ls.append(l)
+        return ls
 
     def language_stats(self,lang=''):
         l=''
@@ -281,8 +301,6 @@ class project:
         # If a path has been provided, upload the file to the resource
         if path:
             new_resource.push(path)
-
-
 
 
 class tx:
