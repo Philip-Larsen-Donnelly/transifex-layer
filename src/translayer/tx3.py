@@ -220,7 +220,7 @@ class project:
         self.__resources()
         rs = []
         for r in self._resources:
-            rs.append(r.res)
+            rs.append(r)
         return rs
 
     def resource(self, res):
@@ -310,7 +310,7 @@ class tx:
         self.__projects()
         ps = []
         for p in self._projects:
-            ps.append(p.proj)
+            ps.append(p)
         return ps
 
     def project(self, proj):
