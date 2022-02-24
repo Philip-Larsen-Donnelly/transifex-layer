@@ -5,6 +5,11 @@ import requests
 from requests.structures import CaseInsensitiveDict
 import json
 import time
+import logging
+
+console = logging.StreamHandler()
+tx_logger = logging.getLogger('tx3')
+tx_logger.addHandler(console)
 
 
 class _tx_request:
@@ -69,31 +74,31 @@ class _tx_request:
             # print(f.headers)
 
             while 'Content-disposition' not in f.headers:
-                time.sleep(2)
+                time.sleep(0.5)
                 f=requests.get(self.api_base + stat, headers=self.headers)
 
             with open(path, 'wb') as transfile:
                 for line in f.iter_content():
                     transfile.write(line)
         else:
-            print(down.status_code,"Error downloading",path)
+            tx_logger.info(down.status_code+" Error downloading",path)
 
     def upload(self,type,payload,content):
 
         header=dict(self.headers)
-        print(header,payload)
+        tx_logger.debug(header,payload)
         up = requests.post(self.api_base + type, data=payload,files=content, headers=header)
-        print(up.json())
+        tx_logger.debug(up.json())
         status_id = up.json()['data']['id']
 
         if not up.raise_for_status():
-            # print(down.json())
+            # tx_logger.debug(down.json())
             stat=type+"/"+status_id
             f=requests.get(self.api_base + stat, headers=self.headers)
-            print(f.headers)
+            tx_logger.info(f.headers)
 
         else:
-            print(up.status_code,"Error uploading file")
+            tx_logger.info(up.status_code+" Error uploading file")
 
 
 class language:
@@ -134,9 +139,9 @@ class resource:
                                 }, "type": "resource_translations_async_downloads"}
                             }
         # print(payload)
-        print("Downloading",path,"...")
+        tx_logger.info("Downloading " + path +" ...")
         self.txr.download("resource_translations_async_downloads",payload,path)
-        print("done.")
+        tx_logger.info("done.")
 
     def pull_source(self,path):
 
@@ -150,9 +155,9 @@ class resource:
                                 }, "type": "resource_strings_async_downloads"}
                             }
         # print(payload)
-        print("Downloading",path,"...")
+        tx_logger.info("Downloading " + path + " ...")
         self.txr.download("resource_strings_async_downloads",payload,path)
-        print("done.")
+        tx_logger.info("done.")
 
     def push(self,path,lang=''):
         payload = {'resource':  self.id}
@@ -162,14 +167,14 @@ class resource:
             type="resource_translations_async_uploads"
         content = {('content', open(path,'rb'))}
 
-        print("Pushing",path,"to transifex... ("+self.slug+")")
+        tx_logger.info("Pushing " + path + " to transifex... ("+self.slug+")")
         self.txr.upload(type,payload,content)
-        print("done.")
+        tx_logger.info("done.")
 
     def delete(self):
-        print("Deleting",self.slug,"...")
+        tx_logger.info("Deleting " + self.slug + " ...")
         self.txr.delete("resources/"+self.id)
-        print("done.")
+        tx_logger.info("done.")
 
     def __language_stats(self,lang=''):
         l=''
@@ -194,6 +199,7 @@ class resource:
                 return self.__language_stats(lang)
         else:
             return self.__language_stats(lang)
+            
 
 
 class project:
@@ -211,7 +217,7 @@ class project:
 
     def __resources(self):
         if self._resources == []:
-            print("Fetching resources for project '"+self.name+"'...")
+            tx_logger.info("Fetching resources for project '"+self.name+"'...")
             resources="resources?filter[project]=" + self.id
             ress = self.txr.get(resources)
             for r in ress['data']:
@@ -221,7 +227,7 @@ class project:
                 ress = self.txr.get_url(ress['links']['next'])
                 for r in ress['data']:
                     self._resources.append(resource(r,self.txr))
-            print("done.")
+            tx_logger.info("done.")
 
     def resources(self):
         self.__resources()
@@ -238,7 +244,7 @@ class project:
 
     def __languages(self):
         if self._languages == []:
-            print("Fetching languages for project '"+self.name+"'...")
+            tx_logger.info("Fetching languages for project '"+self.name+"'...")
             languages="projects/" + self.id + "/languages"
             langs = self.txr.get(languages)
             for l in langs['data']:
@@ -247,7 +253,7 @@ class project:
             #     langs = self.txr.get_url(lannguage['links']['next'])
             #     for l in langs['data']:
             #         self._languages.append(language(l))
-            print("done.")
+            tx_logger.info("done.")
 
     def language(self, lang):
         self.__languages()
@@ -313,16 +319,19 @@ class project:
 
 
 class tx:
-    def __init__(self,org,tx_token):
+    def __init__(self,org,tx_token,log_level=20):
+        # default log level is INFO
 
         self.org="o:"+org
         self.txr=_tx_request(tx_token)
         self._projects=[]
 
+        tx_logger.setLevel(log_level)
+
 
     def __projects(self):
         if self._projects == []:
-            print("Fetching projects...")
+            tx_logger.debug("Fetching projects...")
             projects="projects?filter[organization]=" + self.org
             prjs = self.txr.get(projects)
             for p in prjs['data']:
@@ -331,7 +340,7 @@ class tx:
                 prjs = self.txr.get_url(prjs['links']['next'])
                 for p in prjs['data']:
                     self._projects.append(resource(p,self.txr))
-            print("done.")
+            tx_logger.debug("done.")
 
     def projects(self):
         self.__projects()
