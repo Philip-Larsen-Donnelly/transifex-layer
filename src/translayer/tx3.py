@@ -171,7 +171,7 @@ class resource:
         self.txr.delete("resources/"+self.id)
         print("done.")
 
-    def language_stats(self,lang=''):
+    def __language_stats(self,lang=''):
         l=''
         if lang != '':
             l='&filter[language]=l:' + lang
@@ -185,6 +185,15 @@ class resource:
             return self.stats[lang]
         else:
             return self.stats
+
+    def language_stats(self,lang):
+        if lang != '':
+            if lang in self.stats:
+                return self.stats[lang]
+            else:
+                return self.__language_stats(lang)
+        else:
+            return self.__language_stats(lang)
 
 
 class project:
