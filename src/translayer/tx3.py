@@ -60,6 +60,16 @@ class _tx_request:
         except:
             return resp.text
 
+    def delete_pl(self,url,payload):
+        header=dict(self.headers)
+        header["Content-Type"] = "application/vnd.api+json"
+        resp = requests.delete(self.api_base + url, data=json.dumps(payload), headers=header)
+        resp.raise_for_status()
+        try:
+            return resp.json()
+        except:
+            return resp.text
+
     def download(self,type,body,path):
 
         header=dict(self.headers)
@@ -254,6 +264,51 @@ class project:
             #     for l in langs['data']:
             #         self._languages.append(language(l))
             tx_logger.info("done.")
+
+    def add_language(self, lang_id):
+        self.__languages()
+        for l in self._languages:
+            if l.id == lang_id:
+                tx_logger.info("Language "+l.code+" already exists on project.")
+                return
+        # language is not already part of project, so add it
+        tx_logger.info("Adding language "+lang_id+" to project.")
+        payload = {
+                        "data": [
+                            {
+                            "id": lang_id,
+                            "type": "languages"
+                            }
+                        ]
+                    }
+        linked_languages_api = "projects/" + self.id + "/relationships/languages"
+        
+        create_lang=self.txr.post(linked_languages_api,payload)
+        #reset project languages
+        self._languages=[]
+        self.__languages()
+
+    def delete_language(self, lang_id):
+        self.__languages()
+        for l in self._languages:
+            if l.id == lang_id:
+                tx_logger.info("Removing language "+l.code+" from project.")
+                payload = {
+                                "data": [
+                                    {
+                                    "id": lang_id,
+                                    "type": "languages"
+                                    }
+                                ]
+                            }
+                linked_languages_api = "projects/" + self.id + "/relationships/languages"
+                delete_lang=self.txr.delete_pl(linked_languages_api,payload)
+                #reset project languages
+                self._languages=[]
+                self.__languages()
+                return
+
+        tx_logger.info("Language "+lang_id+" does not exist on project.")
 
     def language(self, lang):
         self.__languages()

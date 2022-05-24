@@ -46,6 +46,14 @@ l_code = "cs"
 lang = project.language(l_code)
 print(lang.name)
 
+# add a new language to the project (by id)
+l_id = "l:vi"
+project.add_language(l_id)
+
+# delete a language from the project (by id)
+l_id = "l:vi"
+project.delete_language(l_id)
+
 # get project resources
 resources = project.resources()
 for r in resources:
