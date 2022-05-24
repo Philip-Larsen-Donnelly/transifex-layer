@@ -7,6 +7,11 @@ A simple python module to support interaction with the transifex API3
 pip install https://github.com/Philip-Larsen-Donnelly/translayer/archive/refs/heads/main.zip
 ```
 
+> Tip - use `--upgrade` to get the latest:
+>  ```
+>  pip install --upgrade https://github.com/Philip-Larsen-Donnelly/translayer/archive/refs/heads/main.zip
+>  ```
+
 ## Create a tx3 instance
 
 ```
