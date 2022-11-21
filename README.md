@@ -94,6 +94,10 @@ for s in p_stats:
     print(s)
     print(p_stats[s]['translated_strings'])
     print(p_stats[s]['total_strings'])
+
+# get the full translations object for a given language
+translations = resource.translations("fr")
+
 ```
 
 ## Pushing and pulling translation files
