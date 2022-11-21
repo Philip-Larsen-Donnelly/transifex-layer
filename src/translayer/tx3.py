@@ -130,6 +130,7 @@ class resource:
         self.txr=txr
         self.project=res['relationships']['project']['data']['id']
         self.stats={}
+        self.trans={}
 
     def pull(self,lang,path):
 
@@ -209,6 +210,29 @@ class resource:
                 return self.__language_stats(lang)
         else:
             return self.__language_stats(lang)
+
+    def __translations(self,lang):
+        l=''
+        if lang != '':
+            l='&filter[language]=l:' + lang
+            trans="resource_translations?include=resource_string&filter[resource]=" + self.id + l
+            st = self.txr.get(trans)
+
+            if lang not in self.trans:
+                # store the full translations object
+                self.trans[lang] = st
+
+            return self.trans[lang]
+
+
+    def translations(self,lang):
+        if lang != '':
+            if lang in self.trans:
+                return self.trans[lang]
+            else:
+                return self.__translations(lang)
+        else:
+            return self.__translations(lang)
             
 
 
