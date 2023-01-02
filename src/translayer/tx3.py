@@ -75,9 +75,9 @@ class _tx_request:
         header=dict(self.headers)
         header["Content-Type"] = "application/vnd.api+json"
         down = requests.post(self.api_base + type,data=json.dumps(body) ,headers=header)
-        # print(down.json())
-        status_id = down.json()['data']['id']
-        if not down.raise_for_status():
+        print(down.status_code, down.json())
+        if down.status_code <= 400:
+            status_id = down.json()['data']['id']
             # print(down.json())
             stat=type+"/"+status_id
             f=requests.get(self.api_base + stat, headers=self.headers)
@@ -91,7 +91,7 @@ class _tx_request:
                 for line in f.iter_content():
                     transfile.write(line)
         else:
-            tx_logger.info(down.status_code+" Error downloading",path)
+            tx_logger.info(str(down.status_code)+" Error downloading "+path)
 
     def upload(self,type,payload,content):
 
@@ -99,9 +99,9 @@ class _tx_request:
         tx_logger.debug(header,payload)
         up = requests.post(self.api_base + type, data=payload,files=content, headers=header)
         tx_logger.debug(up.json())
-        status_id = up.json()['data']['id']
 
         if not up.raise_for_status():
+            status_id = up.json()['data']['id']
             # tx_logger.debug(down.json())
             stat=type+"/"+status_id
             f=requests.get(self.api_base + stat, headers=self.headers)
@@ -132,9 +132,13 @@ class resource:
         self.stats={}
         self.trans={}
 
-    def pull(self,lang,path):
+    def pull(self,lang,path,mode="onlytranslated"):
 
-        payload = {"data": {"relationships": {
+        payload = {"data": {
+                                "attributes": {
+                                    "mode": mode
+                                },                            
+                                "relationships": {
                                     "language": {
                                         "data": {
                                             "id": "l:" + lang,
@@ -147,8 +151,11 @@ class resource:
                                             "type": "resources"
                                         }
                                     }
-                                }, "type": "resource_translations_async_downloads"}
+                                }, 
+                                "type": "resource_translations_async_downloads"
+                                }
                             }
+
         # print(payload)
         tx_logger.info("Downloading " + path +" ...")
         self.txr.download("resource_translations_async_downloads",payload,path)
@@ -275,6 +282,15 @@ class project:
         for r in self._resources:
             if r.slug == res:
                 return r
+
+    def delete_resource(self, res):
+        self.__resources()
+        for r in self._resources:
+            if r.slug == res:
+                r.delete()
+                self._resources == []
+                print("reset resources")
+                self.__resources()
 
     def __languages(self):
         if self._languages == []:
@@ -433,3 +449,4 @@ class tx:
         for p in self._projects:
             if p.slug == proj:
                 return p
+
