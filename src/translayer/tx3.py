@@ -35,6 +35,7 @@ class _tx_request:
             return resp.text
 
     def get(self,url):
+        # print("GET")
         resp = requests.get(self.api_base + url, headers=self.headers)
         # print(json.dumps(resp.json(),indent=2))
         resp.raise_for_status()
@@ -44,6 +45,7 @@ class _tx_request:
             return resp.text
 
     def get_url(self,url):
+        # print("GET_URL")
         resp = requests.get(url, headers=self.headers)
         # print(json.dumps(resp.json(),indent=2))
         resp.raise_for_status()
@@ -217,6 +219,9 @@ class resource:
                 return self.__language_stats(lang)
         else:
             return self.__language_stats(lang)
+        
+    def set_language_stats(self,lang,stats):
+        self.stats[lang] = stats
 
     def __translations(self,lang):
         l=''
@@ -282,6 +287,8 @@ class project:
         for r in self._resources:
             if r.slug == res:
                 return r
+        return None
+
 
     def delete_resource(self, res):
         self.__resources()
@@ -364,15 +371,32 @@ class project:
         return ls
 
     def language_stats(self,lang=''):
+        l_message=''
         l=''
         if lang != '':
             l='&filter[language]=l:' + lang
+            l_message=" language '"+lang+"'"
+        tx_logger.info("Fetching language stats for project resources '"+self.name+"'"+l_message+"...")
         stats="resource_language_stats?filter[project]=" + self.id + l
         st = self.txr.get(stats)
+        #print(st)
         for s in st['data']:
             statlang = s['relationships']['language']['data']['id'].split(':')[1]
+            statres = s['relationships']['resource']['data']['id'].split(':')[5]
+            if self.resource(statres):
+                self.resource(statres).set_language_stats(statlang,s['attributes'])
+
             if statlang not in self.stats:
                 self.stats[statlang] = s['attributes']
+        while 'next' in st['links']:
+            st = self.txr.get_url(st['links']['next'])
+            for s in st['data']:
+                statlang = s['relationships']['language']['data']['id'].split(':')[1]
+                statres = s['relationships']['resource']['data']['id'].split(':')[5]
+                if self.resource(statres):
+                    self.resource(statres).set_language_stats(statlang,s['attributes'])
+                if statlang not in self.stats:
+                    self.stats[statlang] = s['attributes']
         if lang != '':
             return self.stats[lang]
         else:
