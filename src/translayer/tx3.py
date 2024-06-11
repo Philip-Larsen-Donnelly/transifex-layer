@@ -36,6 +36,7 @@ class _tx_request:
 
     def get(self,url):
         # print("GET")
+        # print(self.api_base + url)
         resp = requests.get(self.api_base + url, headers=self.headers)
         # print(json.dumps(resp.json(),indent=2))
         resp.raise_for_status()
@@ -61,6 +62,15 @@ class _tx_request:
             return resp.json()
         except:
             return resp.text
+        
+    def patch(self,url,payload):
+        header=dict(self.headers)
+        header["Content-Type"] = "application/vnd.api+json"
+        resp = requests.patch(self.api_base + url, data=json.dumps(payload), headers=header)
+        # resp.raise_for_status()
+        print(resp.status_code)
+        if resp.status_code > 400:
+            print(resp.text)
 
     def delete_pl(self,url,payload):
         header=dict(self.headers)
@@ -133,6 +143,7 @@ class resource:
         self.project=res['relationships']['project']['data']['id']
         self.stats={}
         self.trans={}
+        self._strings={}
 
     def pull(self,lang,path,mode="onlytranslated"):
 
@@ -233,6 +244,12 @@ class resource:
             if lang not in self.trans:
                 # store the full translations object
                 self.trans[lang] = st
+                while st['links']['next']:
+                    st = self.txr.get_url(st['links']['next'])
+                    #append to the translations data object
+                    self.trans[lang]['data'].extend(st['data'])
+                    #append to the translations included object
+                    self.trans[lang]['included'].extend(st['included'])
 
             return self.trans[lang]
 
@@ -245,7 +262,41 @@ class resource:
                 return self.__translations(lang)
         else:
             return self.__translations(lang)
-            
+        
+    def __strings(self):
+        strings="resource_strings?filter[resource]=" + self.id
+        st = self.txr.get(strings)
+        for s in st['data']:
+            self._strings[s['id']]= (s['attributes']['strings'])
+            while st['links']['next']:
+                st = self.txr.get_url(st['links']['next'])
+                for s in st['data']:
+                    self._strings[s['id']]= (s['attributes']['strings'])
+        return self._strings
+
+    def strings(self):
+        if self._strings == {}:
+            return self.__strings()
+        else:
+            return self._strings
+
+
+    def patch_translation(self,id,translation):
+        # print(translation)
+        payload = {
+                                
+            "data": {
+                "attributes": {
+                "strings": translation
+                },
+                "id": id,
+                "type": "resource_translations"
+            }
+            }
+        tx_logger.info("Patching " + id + " ...")
+        # print(payload)
+        self.txr.patch("resource_translations/"+id,payload)
+        tx_logger.info("done.")
 
 
 class project:
@@ -260,6 +311,12 @@ class project:
         self._languages=[]
         # self._details={}
         self.stats={}
+
+
+    def delete_be_careful(self):
+        tx_logger.info("Deleting " + self.slug + " ...")
+        self.txr.delete("projects/"+self.id)
+        tx_logger.info("done.")
 
     def __resources(self):
         if self._resources == []:
